@@ -4,7 +4,7 @@ import { gptAPI, KUNA_SYSTEM_PROMPT } from '../services/gpt';
 import { prepareKunaTTS, splitKunaTTSText, stripTTSMarkup, ttsAPI } from '../services/fishAudioTTS';
 import { ttsManager } from '../services/ttsManager';
 import { getSongInsight } from '../services/netease';
-import { KUNA_AUTO_ANNOUNCE, shouldAutoAnnounce } from '../services/kunaVoice';
+import { KUNA_AUTO_ANNOUNCE, shouldAutoAnnounce, shouldStartAutoAnnouncement } from '../services/kunaVoice';
 import { formatSongInsightForKuna } from '../services/songInsightText';
 import { formatSongCommentsForKuna, shouldTriggerLoginCommentReadout, songCommentsAPI } from '../services/songComments';
 
@@ -24,7 +24,10 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
 
   const announce = useCallback(async (type: AnnouncementType) => {
     const latestKuna = kunaRef.current;
-    if (latestKuna.isSpeaking) return;
+    if (!shouldStartAutoAnnouncement({
+      kunaIsSpeaking: latestKuna.isSpeaking,
+      ttsIsPlaying: ttsManager.isPlaying(),
+    })) return;
 
     const song = player.currentSong;
     if (!song) return;
@@ -71,11 +74,6 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
         content: displayContent,
         timestamp: Date.now(),
       });
-
-      if (ttsManager.isPlaying()) {
-        setKunaSpeaking(false);
-        return;
-      }
 
       const ttsChunks = splitKunaTTSText(prepareKunaTTS(content));
       const audioUrls = await Promise.all(ttsChunks.map((chunk) => ttsAPI.synthesize(chunk)));

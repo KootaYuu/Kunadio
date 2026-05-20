@@ -17,6 +17,13 @@ export function shouldAutoAnnounce(options: {
   return true;
 }
 
+export function shouldStartAutoAnnouncement(options: {
+  kunaIsSpeaking: boolean;
+  ttsIsPlaying: boolean;
+}): boolean {
+  return !options.kunaIsSpeaking && !options.ttsIsPlaying;
+}
+
 export function summarizeForVoice(text: string, maxChars = DEFAULT_DIALOG_VOICE_CHARS): string {
   const clean = text.replace(/\s+/g, ' ').trim();
   if (clean.length <= maxChars) return clean;

@@ -72,6 +72,7 @@ export default function KunaChatPanel() {
     try {
       ttsManager.stop();
       setIsPreparingVoice(true);
+      setKunaSpeaking(true);
 
       const cleanText = stripTTSMarkup(text);
       const voiceText = summarizeForVoice(cleanText, KUNA_DIALOG_VOICE_MAX_CHARS);
@@ -79,7 +80,6 @@ export default function KunaChatPanel() {
       const audioUrls = await Promise.all(ttsChunks.map((chunk) => ttsAPI.synthesize(chunk)));
 
       setIsPreparingVoice(false);
-      setKunaSpeaking(true);
       ttsManager.playSequence(audioUrls, useStore.getState().kuna.voiceVolume / 100);
       ttsManager.setOnEnded(() => {
         setKunaSpeaking(false);

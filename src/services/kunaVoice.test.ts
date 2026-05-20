@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { KUNA_AUTO_ANNOUNCE, KUNA_DIALOG_VOICE_MAX_CHARS, shouldAutoAnnounce, summarizeForVoice } from './kunaVoice';
+import {
+  KUNA_AUTO_ANNOUNCE,
+  KUNA_DIALOG_VOICE_MAX_CHARS,
+  shouldAutoAnnounce,
+  shouldStartAutoAnnouncement,
+  summarizeForVoice,
+} from './kunaVoice';
 
 assert.equal(KUNA_AUTO_ANNOUNCE.maxSpeakPer15Min, 4);
 assert.equal(KUNA_AUTO_ANNOUNCE.minSecondsBetweenSpeak, 75);
@@ -11,6 +17,10 @@ assert.equal(
   }),
   true,
 );
+
+assert.equal(shouldStartAutoAnnouncement({ kunaIsSpeaking: true, ttsIsPlaying: false }), false);
+assert.equal(shouldStartAutoAnnouncement({ kunaIsSpeaking: false, ttsIsPlaying: true }), false);
+assert.equal(shouldStartAutoAnnouncement({ kunaIsSpeaking: false, ttsIsPlaying: false }), true);
 
 assert.equal(KUNA_DIALOG_VOICE_MAX_CHARS, 720);
 
