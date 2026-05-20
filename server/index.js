@@ -17,11 +17,30 @@ const allowedOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const defaultAllowedOriginHosts = [
+  'kunadio.netlify.app',
+  'kunadio-1.onrender.com',
+  'kunadio.onrender.com',
+];
 let neteaseCookie = '';
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return true;
+
+  try {
+    const { hostname } = new URL(origin);
+    return defaultAllowedOriginHosts.includes(hostname) ||
+      hostname.endsWith('.netlify.app') ||
+      hostname.endsWith('.onrender.com');
+  } catch {
+    return false;
+  }
+};
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
