@@ -8,7 +8,7 @@
     "start": "node server/index.js",
     "build": "tsc -b && vite build",
     "build:netlify": "tsc -b && vite build",
-    "build:render": "npm install && cd server && npm install && cd .. && npm run build",
+    "build:render": "npm run build",
     "lint": "eslint .",
     "test": "npx tsx src/services/kunaModes.test.ts && npx tsx src/services/librarySources.test.ts && npx tsx src/services/lyrics.test.ts && npx tsx src/services/neteaseSession.test.ts && npx tsx src/services/songInsightText.test.ts && npx tsx src/services/songLoader.test.ts && npx tsx src/stores/useStore.test.ts",
     "preview": "vite preview",
@@ -17,7 +17,13 @@
   },
   "dependencies": {
     "axios": "^1.16.1",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "https-proxy-agent": "^9.0.0",
     "lucide-react": "^1.16.0",
+    "NeteaseCloudMusicApi": "^4.32.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "zustand": "^5.0.13"
