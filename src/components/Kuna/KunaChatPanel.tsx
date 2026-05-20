@@ -4,7 +4,7 @@ import { parseVolumeInput, useStore } from '../../stores/useStore';
 import { gptAPI, KUNA_TOOLS } from '../../services/gpt';
 import { prepareKunaTTS, stripTTSMarkup, ttsAPI } from '../../services/fishAudioTTS';
 import { ttsManager } from '../../services/ttsManager';
-import { summarizeForVoice } from '../../services/kunaVoice';
+import { KUNA_DIALOG_VOICE_MAX_CHARS, summarizeForVoice } from '../../services/kunaVoice';
 import { buildKunaChatMessages } from '../../services/kunaPromptContext';
 import { getLyricContextForKuna } from '../../services/lyrics';
 import { getSongInsight } from '../../services/netease';
@@ -73,7 +73,7 @@ export default function KunaChatPanel() {
       setIsPreparingVoice(true);
 
       const cleanText = stripTTSMarkup(text);
-      const voiceText = summarizeForVoice(cleanText);
+      const voiceText = summarizeForVoice(cleanText, KUNA_DIALOG_VOICE_MAX_CHARS);
       const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(voiceText));
 
       setIsPreparingVoice(false);

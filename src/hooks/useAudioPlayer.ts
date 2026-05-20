@@ -91,10 +91,10 @@ export function useAudioPlayer() {
       audio.src = currentSongUrl;
       audio.load();
       if (isPlayingRef.current) {
-        audio.play().catch(console.error);
+        void attemptAudioPlay(audio, () => setPlaying(false));
       }
     }
-  }, [currentSongUrl]);
+  }, [currentSongUrl, setPlaying]);
 
   // Handle play/pause
   useEffect(() => {
@@ -105,11 +105,11 @@ export function useAudioPlayer() {
       if (audioContextRef.current?.state === 'suspended') {
         audioContextRef.current.resume();
       }
-      audio.play().catch(console.error);
+      void attemptAudioPlay(audio, () => setPlaying(false));
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, setPlaying]);
 
   // Handle volume changes + Kuna speaking ducking
   useEffect(() => {
@@ -168,4 +168,17 @@ export function useAudioPlayer() {
 export function shouldLoadAudioSource(currentSource: string | null, nextSource: string | null | undefined): boolean {
   if (!nextSource) return false;
   return currentSource !== nextSource;
+}
+
+export async function attemptAudioPlay(
+  audio: Pick<HTMLAudioElement, 'play'>,
+  onPlayRejected: (error: unknown) => void,
+  logError: (error: unknown) => void = console.error,
+): Promise<void> {
+  try {
+    await audio.play();
+  } catch (error) {
+    logError(error);
+    onPlayRejected(error);
+  }
 }

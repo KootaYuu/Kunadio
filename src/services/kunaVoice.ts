@@ -1,4 +1,5 @@
 const DEFAULT_DIALOG_VOICE_CHARS = 180;
+export const KUNA_DIALOG_VOICE_MAX_CHARS = 720;
 
 export const KUNA_AUTO_ANNOUNCE = {
   maxSpeakPer15Min: 4,

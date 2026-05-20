@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { KUNA_AUTO_ANNOUNCE, shouldAutoAnnounce, summarizeForVoice } from './kunaVoice';
+import { KUNA_AUTO_ANNOUNCE, KUNA_DIALOG_VOICE_MAX_CHARS, shouldAutoAnnounce, summarizeForVoice } from './kunaVoice';
 
 assert.equal(KUNA_AUTO_ANNOUNCE.maxSpeakPer15Min, 4);
 assert.equal(KUNA_AUTO_ANNOUNCE.minSecondsBetweenSpeak, 75);
@@ -11,6 +11,11 @@ assert.equal(
   }),
   true,
 );
+
+assert.equal(KUNA_DIALOG_VOICE_MAX_CHARS, 720);
+
+const longDjReply = Array.from({ length: 12 }, (_, index) => `Kuna sentence ${index + 1} with enough room to sound complete.`).join(' ');
+assert.equal(summarizeForVoice(longDjReply, KUNA_DIALOG_VOICE_MAX_CHARS), longDjReply);
 
 assert.equal(
   shouldAutoAnnounce({
