@@ -28,6 +28,7 @@ export function buildKunaChatMessages({
       content: [
         `当前播放状态：${player.isPlaying ? '播放中' : '已暂停'}`,
         `歌曲：${player.currentSong?.name || '无'}`,
+        player.currentSong ? `Song ID：${player.currentSong.id}` : '',
         `歌手：${player.currentSong?.artists?.map((artist) => artist.name).join(', ') || '无'}`,
         `播放进度：${Math.round(player.currentTime)} 秒`,
         `音量：${player.volume}%`,

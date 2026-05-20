@@ -127,9 +127,10 @@ export interface PlayerToolCall {
     arguments: string | {
       volume?: number;
       songId?: string;
+      songName?: string;
+      artist?: string;
       position?: number;
       query?: string;
-      artist?: string;
       song?: string;
     };
   };
@@ -177,6 +178,19 @@ export interface MusicSearchResponse {
   query: string;
   summary: string;
   results: MusicSearchResult[];
+}
+
+export interface SongComment {
+  id: number | string;
+  content: string;
+  likedCount?: number;
+  nickname?: string;
+}
+
+export interface SongCommentsResponse {
+  songId: number;
+  comments: SongComment[];
+  source: 'netease';
 }
 
 export type VisualizerMode = 'spectrum' | 'wave' | 'circle';

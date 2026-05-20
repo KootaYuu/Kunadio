@@ -10,6 +10,7 @@ import { getLyricContextForKuna } from '../../services/lyrics';
 import { getSongInsight } from '../../services/netease';
 import { formatSongInsightForKuna } from '../../services/songInsightText';
 import { formatMusicSearchForKuna, musicSearchAPI, parseToolArguments } from '../../services/musicSearch';
+import { formatSongCommentsForKuna, songCommentsAPI } from '../../services/songComments';
 import type { PlayerToolCall } from '../../types';
 import { shouldSendKunaMessageFromKey } from '../../utils/keyboard';
 
@@ -106,6 +107,12 @@ export default function KunaChatPanel() {
         if (!query.trim()) return 'Search failed: missing query.';
         const result = await musicSearchAPI.search(query, args.artist, args.song);
         return formatMusicSearchForKuna(result);
+      }
+      case 'readSongComments': {
+        const songId = Number(args.songId || player.currentSong?.id);
+        if (!Number.isFinite(songId)) return 'Comment readout failed: missing current song id.';
+        const result = await songCommentsAPI.get(songId);
+        return formatSongCommentsForKuna(result);
       }
       case 'play':
         if (player.currentSong) {

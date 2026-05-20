@@ -45,6 +45,7 @@ assert.equal(messages.at(-1)?.role, 'user');
 assert.equal(messages.at(-1)?.content, '介绍一下现在这首');
 
 const allContent = messages.map((message) => message.content).join('\n');
+assert.match(allContent, /Song ID/);
 assert.equal(allContent.includes('当前模式'), false);
 assert.equal(allContent.includes('Quiet'), false);
 assert.equal(allContent.includes('Companion'), false);

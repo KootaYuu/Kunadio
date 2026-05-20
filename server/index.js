@@ -69,6 +69,7 @@ const endpointMap = {
   'recommend/songs': 'recommend_songs',
   'search': 'search',
   'lyric': 'lyric',
+  'comment/music': 'comment_music',
   'user/detail': 'user_detail',
 };
 
@@ -112,6 +113,7 @@ app.use('/api/netease', async (req, res) => {
 
 const songInsightCache = new Map();
 const musicSearchCache = new Map();
+const songCommentsCache = new Map();
 
 const trimText = (text = '', maxLength = 260) =>
   text
@@ -238,6 +240,43 @@ const searchPublicMusicInfo = async ({ query, artist, song }) => {
   return response;
 };
 
+const sanitizeCommentText = (text = '', maxLength = 140) =>
+  String(text)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+
+const getSongComments = async (id) => {
+  if (songCommentsCache.has(id)) {
+    return songCommentsCache.get(id);
+  }
+
+  const result = await ncm.comment_music({ id, limit: 30 });
+  const body = result.body || result;
+  const rawComments = [
+    ...(body.hotComments || []),
+    ...(body.comments || []),
+  ];
+
+  const comments = rawComments
+    .map((comment) => ({
+      id: comment.commentId || comment.commentIdStr || comment.time || `${id}-${comment.content}`,
+      content: sanitizeCommentText(comment.content || ''),
+      likedCount: comment.likedCount || 0,
+      nickname: sanitizeSearchText(comment.user?.nickname || '', 40),
+    }))
+    .filter((comment) => comment.content);
+
+  const response = {
+    songId: id,
+    comments,
+    source: 'netease',
+  };
+
+  songCommentsCache.set(id, response);
+  return response;
+};
+
 // ============ Song insight aggregation ============
 app.get('/api/song-insight/:id', async (req, res) => {
   try {
@@ -313,6 +352,24 @@ app.post('/api/music-search', async (req, res) => {
     console.error('Music search error:', error.message);
     res.status(500).json({
       error: 'Music search failed',
+      details: error.message,
+    });
+  }
+});
+
+app.get('/api/song-comments/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: 'Invalid song id' });
+    }
+
+    const result = await getSongComments(id);
+    res.json(result);
+  } catch (error) {
+    console.error('Song comments error:', error.message);
+    res.status(500).json({
+      error: 'Song comments failed',
       details: error.message,
     });
   }
