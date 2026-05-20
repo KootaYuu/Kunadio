@@ -1,5 +1,25 @@
 import assert from 'node:assert/strict';
-import { findActiveLyricIndex, getLyricContextForKuna, getLyricWindow, parseLrc } from './lyrics';
+import {
+  findActiveLyricIndex,
+  getImmersiveLyricsDisplayState,
+  getLyricContextForKuna,
+  getLyricWindow,
+  parseLrc,
+} from './lyrics';
+
+assert.deepEqual(
+  getImmersiveLyricsDisplayState({
+    hasCurrentSong: true,
+    hasCover: true,
+    isLoading: false,
+    lyricsError: 'no lyrics',
+    activeLine: null,
+  }),
+  {
+    mode: 'empty',
+    showArtwork: true,
+  },
+);
 
 const raw = [
   '[00:01.00]第一句',

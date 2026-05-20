@@ -1,7 +1,12 @@
 import { ListTree, Loader2, Music2, Quote, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../stores/useStore';
-import { findActiveLyricIndex, getLyricWindow, parseLrc } from '../../services/lyrics';
+import {
+  findActiveLyricIndex,
+  getImmersiveLyricsDisplayState,
+  getLyricWindow,
+  parseLrc,
+} from '../../services/lyrics';
 import { neteaseAPI } from '../../services/netease';
 
 const TEXT = {
@@ -34,6 +39,14 @@ export default function LyricsImmersiveView() {
   );
   const [previousLine, activeLine, nextLine] = getLyricWindow(ui.lyrics, activeIndex);
   const artistNames = player.currentSong?.artists?.map((artist) => artist.name).join(', ') || TEXT.noArtist;
+  const displayState = getImmersiveLyricsDisplayState({
+    hasCurrentSong: Boolean(player.currentSong),
+    hasCover: Boolean(player.currentSong?.cover),
+    isLoading: ui.lyricsLoading,
+    lyricsError: ui.lyricsError,
+    activeLine,
+  });
+  const visibleActiveLine = displayState.mode === 'lyrics' ? activeLine : null;
 
   useEffect(() => {
     let isCancelled = false;
@@ -89,20 +102,11 @@ export default function LyricsImmersiveView() {
     setIsBrowsingLyrics(false);
   };
 
-  if (ui.lyricsLoading) {
-    return (
-      <div className="flex min-h-[34rem] w-full items-center justify-center gap-3 text-base text-text-secondary">
-        <Loader2 size={19} className="animate-spin text-caramel" />
-        {TEXT.loading}
-      </div>
-    );
-  }
-
-  if (ui.lyricsError || !activeLine) {
+  if (displayState.mode === 'waiting') {
     return (
       <div className="flex min-h-[34rem] w-full flex-col items-center justify-center text-center text-xl leading-relaxed text-text-secondary">
         <Quote size={34} strokeWidth={1.5} className="mb-4 text-caramel/64" />
-        {songId ? ui.lyricsError || TEXT.empty : TEXT.waiting}
+        {TEXT.waiting}
       </div>
     );
   }
@@ -144,7 +148,17 @@ export default function LyricsImmersiveView() {
           </button>
         </div>
 
-        {isBrowsingLyrics ? (
+        {displayState.mode === 'loading' ? (
+          <div className="flex h-[42dvh] max-w-4xl items-center justify-center gap-3 text-base text-text-secondary sm:h-[31rem]">
+            <Loader2 size={19} className="animate-spin text-caramel" />
+            {TEXT.loading}
+          </div>
+        ) : displayState.mode === 'empty' ? (
+          <div className="flex h-[42dvh] max-w-4xl flex-col items-start justify-center text-xl leading-relaxed text-text-secondary sm:h-[31rem] sm:text-3xl">
+            <Quote size={34} strokeWidth={1.5} className="mb-4 text-caramel/64" />
+            {ui.lyricsError || TEXT.empty}
+          </div>
+        ) : isBrowsingLyrics ? (
           <div className="h-[52dvh] max-w-4xl overflow-hidden rounded-lg border border-white/10 bg-bg-primary/42 backdrop-blur-md sm:h-[26rem]">
             <div className="flex items-center justify-between border-b border-white/8 px-5 py-3 text-sm text-text-secondary">
               <span>{TEXT.jump}</span>
@@ -183,10 +197,10 @@ export default function LyricsImmersiveView() {
             </div>
             <div className="flex min-h-0 items-center overflow-hidden">
               <p
-                key={`${activeLine.time}-${activeLine.text}`}
+                key={`${visibleActiveLine?.time}-${visibleActiveLine?.text}`}
                 className="lyric-hero line-clamp-4 max-w-[9ch] text-[clamp(3.25rem,17vw,5.6rem)] font-semibold leading-[1.03] tracking-normal text-glow sm:line-clamp-3 sm:max-w-[11ch] sm:text-7xl lg:text-8xl"
               >
-                {activeLine.text}
+                {visibleActiveLine?.text}
               </p>
             </div>
             <div className="flex min-h-0 items-start overflow-hidden">

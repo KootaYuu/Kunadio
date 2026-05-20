@@ -115,6 +115,8 @@ export default function PlaylistPanel({ isOpen, onClose }: PlaylistPanelProps) {
     [displayedSongs, effectiveVisibleSongCount],
   );
   const isBrowsing = library.browseSongs.length > 0 || library.browseIsLoading;
+  const canLoadMoreBrowseSongs = isBrowsing && library.browseHasMore && !library.browseIsLoading;
+  const shouldShowEmptyState = displayedSongs.length === 0 && !library.browseIsLoading && !canLoadMoreBrowseSongs;
   const nextPreview = getNextPreview(player);
 
   return (
@@ -237,7 +239,7 @@ export default function PlaylistPanel({ isOpen, onClose }: PlaylistPanelProps) {
           </div>
         )}
 
-        {displayedSongs.length === 0 && !library.browseIsLoading ? (
+        {shouldShowEmptyState ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
             <ListMusic size={30} strokeWidth={1.8} className="mb-3 text-text-muted" />
             <p className="text-base text-text-secondary">{TEXT.empty}</p>
@@ -284,7 +286,7 @@ export default function PlaylistPanel({ isOpen, onClose }: PlaylistPanelProps) {
               </div>
             )}
 
-            {isBrowsing && library.browseHasMore && !library.browseIsLoading && (
+            {canLoadMoreBrowseSongs && (
               <button
                 onClick={() => void handleLoadMore()}
                 className="mx-2 mb-2 w-[calc(100%-1rem)] rounded-lg border border-white/10 bg-bg-panel py-2.5 text-base text-text-secondary transition duration-200 ease-out hover:-translate-y-0.5 hover:border-caramel/40 hover:text-glow active:translate-y-0"

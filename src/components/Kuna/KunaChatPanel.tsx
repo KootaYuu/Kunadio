@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Volume2, X } from 'lucide-react';
-import { useStore } from '../../stores/useStore';
-import { gptAPI, PLAYER_TOOLS } from '../../services/gpt';
+import { parseVolumeInput, useStore } from '../../stores/useStore';
+import { gptAPI, KUNA_TOOLS } from '../../services/gpt';
 import { prepareKunaTTS, stripTTSMarkup, ttsAPI } from '../../services/fishAudioTTS';
 import { ttsManager } from '../../services/ttsManager';
 import { summarizeForVoice } from '../../services/kunaVoice';
@@ -9,7 +9,9 @@ import { buildKunaChatMessages } from '../../services/kunaPromptContext';
 import { getLyricContextForKuna } from '../../services/lyrics';
 import { getSongInsight } from '../../services/netease';
 import { formatSongInsightForKuna } from '../../services/songInsightText';
+import { formatMusicSearchForKuna, musicSearchAPI, parseToolArguments } from '../../services/musicSearch';
 import type { PlayerToolCall } from '../../types';
+import { shouldSendKunaMessageFromKey } from '../../utils/keyboard';
 
 const TEXT = {
   speaking: '正在说话...',
@@ -61,6 +63,10 @@ export default function KunaChatPanel() {
     return () => window.clearTimeout(timer);
   }, [kuna.isChatOpen]);
 
+  useEffect(() => {
+    ttsManager.setVolume(kuna.voiceVolume / 100);
+  }, [kuna.voiceVolume]);
+
   const playTTS = async (text: string) => {
     try {
       ttsManager.stop();
@@ -72,7 +78,7 @@ export default function KunaChatPanel() {
 
       setIsPreparingVoice(false);
       setKunaSpeaking(true);
-      ttsManager.play(audioUrl, kuna.voiceVolume / 100);
+      ttsManager.play(audioUrl, useStore.getState().kuna.voiceVolume / 100);
       ttsManager.setOnEnded(() => {
         setKunaSpeaking(false);
       });
@@ -89,10 +95,17 @@ export default function KunaChatPanel() {
     }
   };
 
-  const executeToolCall = (toolCall: PlayerToolCall) => {
-    const { name, arguments: args } = toolCall.function;
+  const executeToolCall = async (toolCall: PlayerToolCall) => {
+    const { name } = toolCall.function;
+    const args = parseToolArguments(toolCall.function.arguments);
 
     switch (name) {
+      case 'searchMusicInfo': {
+        const query = args.query || [args.song, args.artist, 'music'].filter(Boolean).join(' ');
+        if (!query.trim()) return 'Search failed: missing query.';
+        const result = await musicSearchAPI.search(query, args.artist, args.song);
+        return formatMusicSearchForKuna(result);
+      }
       case 'play':
         if (player.currentSong) {
           setPlaying(true);
@@ -148,13 +161,13 @@ export default function KunaChatPanel() {
         userMessage,
       });
 
-      const response = await gptAPI.chat(messages, PLAYER_TOOLS, 'auto');
+      const response = await gptAPI.chat(messages, KUNA_TOOLS, 'auto');
       const choice = response.choices[0];
 
       let reply = choice.message.content;
       if (choice.message.tool_calls) {
         for (const toolCall of choice.message.tool_calls) {
-          const result = executeToolCall(toolCall);
+          const result = await executeToolCall(toolCall);
           messages.push({
             role: 'assistant',
             content: choice.message.content || '',
@@ -167,7 +180,7 @@ export default function KunaChatPanel() {
           });
         }
 
-        const finalResponse = await gptAPI.chat(messages, PLAYER_TOOLS, 'auto');
+        const finalResponse = await gptAPI.chat(messages, KUNA_TOOLS, 'auto');
         reply = finalResponse.choices[0].message.content;
       }
 
@@ -193,7 +206,7 @@ export default function KunaChatPanel() {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (shouldSendKunaMessageFromKey(event)) {
       event.preventDefault();
       void sendMessage();
     }
@@ -231,7 +244,7 @@ export default function KunaChatPanel() {
               min={0}
               max={100}
               value={kuna.voiceVolume}
-              onChange={(event) => setKunaVoiceVolume(Number(event.target.value))}
+              onInput={(event) => setKunaVoiceVolume(parseVolumeInput(event.currentTarget.value))}
               className="h-2 min-w-0 flex-1 cursor-pointer accent-caramel"
               aria-label={TEXT.voiceVolume}
             />

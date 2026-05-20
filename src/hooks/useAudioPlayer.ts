@@ -120,13 +120,17 @@ export function useAudioPlayer() {
 
     const baseVolume = player.volume / 100;
     const targetVolume = kuna.isSpeaking ? baseVolume * 0.15 : baseVolume;
-    const duration = kuna.isSpeaking ? 220 : 1300;
+    const duration = kuna.isSpeaking ? 220 : 0;
     const now = audioContext.currentTime;
 
     audio.volume = 1;
     gain.gain.cancelScheduledValues(now);
     gain.gain.setValueAtTime(gain.gain.value, now);
-    gain.gain.linearRampToValueAtTime(targetVolume, now + duration / 1000);
+    if (duration > 0) {
+      gain.gain.linearRampToValueAtTime(targetVolume, now + duration / 1000);
+    } else {
+      gain.gain.setValueAtTime(targetVolume, now);
+    }
   }, [player.volume, kuna.isSpeaking]);
 
   // Analyser data loop

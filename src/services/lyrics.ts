@@ -2,6 +2,19 @@ import type { LyricLine } from '../types';
 
 const TIME_TAG_PATTERN = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
 
+interface ImmersiveLyricsDisplayInput {
+  hasCurrentSong: boolean;
+  hasCover: boolean;
+  isLoading: boolean;
+  lyricsError: string | null;
+  activeLine: LyricLine | null;
+}
+
+interface ImmersiveLyricsDisplayState {
+  mode: 'waiting' | 'loading' | 'empty' | 'lyrics';
+  showArtwork: boolean;
+}
+
 export function parseLrc(raw: string): LyricLine[] {
   return raw
     .split(/\r?\n/)
@@ -64,6 +77,36 @@ export function getLyricWindow(lines: LyricLine[], activeIndex: number): [
     lines[currentIndex] || null,
     lines[currentIndex + 1] || null,
   ];
+}
+
+export function getImmersiveLyricsDisplayState(
+  input: ImmersiveLyricsDisplayInput,
+): ImmersiveLyricsDisplayState {
+  if (!input.hasCurrentSong) {
+    return {
+      mode: 'waiting',
+      showArtwork: false,
+    };
+  }
+
+  if (input.isLoading) {
+    return {
+      mode: 'loading',
+      showArtwork: input.hasCover,
+    };
+  }
+
+  if (input.lyricsError || !input.activeLine) {
+    return {
+      mode: 'empty',
+      showArtwork: input.hasCover,
+    };
+  }
+
+  return {
+    mode: 'lyrics',
+    showArtwork: input.hasCover,
+  };
 }
 
 function toSeconds(minutes: string, seconds: string, fraction = '0'): number {

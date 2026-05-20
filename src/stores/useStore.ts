@@ -163,7 +163,7 @@ export const useStore = create<AppState>((set, get) => ({
   setCurrentTime: (time) => set((state) => ({ player: { ...state.player, currentTime: time } })),
   setDuration: (duration) => set((state) => ({ player: { ...state.player, duration } })),
   setVolume: (volume) => set((state) => ({
-    player: { ...state.player, volume: Math.max(0, Math.min(100, volume)) },
+    player: { ...state.player, volume: clampVolume(volume) },
   })),
   setPlaylist: (playlist) => set((state) => ({ player: { ...state.player, playlist, currentIndex: 0 } })),
   appendPlaylist: (songs) => set((state) => {
@@ -431,7 +431,7 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({ kuna: { ...state.kuna, messages: [...state.kuna.messages, message].slice(-50) } })),
   setLastSpeakTime: (time) => set((state) => ({ kuna: { ...state.kuna, lastSpeakTime: time } })),
   setKunaVoiceVolume: (volume) => set((state) => ({
-    kuna: { ...state.kuna, voiceVolume: Math.max(0, Math.min(100, volume)) },
+    kuna: { ...state.kuna, voiceVolume: clampVolume(volume) },
   })),
 
   // UI actions
@@ -451,4 +451,13 @@ function getRandomNextIndex(length: number, currentIndex: number): number {
     nextIndex = (nextIndex + 1) % length;
   }
   return nextIndex;
+}
+
+export function clampVolume(volume: number): number {
+  if (!Number.isFinite(volume)) return 0;
+  return Math.max(0, Math.min(100, volume));
+}
+
+export function parseVolumeInput(value: string): number {
+  return clampVolume(Number(value));
 }

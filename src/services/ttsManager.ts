@@ -61,6 +61,14 @@ export const ttsManager = {
   },
 
   /**
+   * Update the volume of the currently playing TTS audio.
+   */
+  setVolume: (volume: number) => {
+    if (!currentTTSAudio) return;
+    currentTTSAudio.volume = Math.max(0, Math.min(1, volume));
+  },
+
+  /**
    * Set a callback for when TTS ends
    */
   setOnEnded: (callback: () => void) => {

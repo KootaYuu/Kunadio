@@ -84,6 +84,10 @@ export async function loadLibrarySourcePage(
   }
 
   if (source.kind === 'liked') {
+    if (source.playlistId) {
+      return loadPlaylistSourcePage(source, offset, limit);
+    }
+
     const likedResult = await neteaseAPI.getLikedSongIds(uid);
     const ids: number[] = likedResult.ids || [];
     if (ids.length > 0) {
@@ -101,6 +105,16 @@ export async function loadLibrarySourcePage(
     if (!source.playlistId) return emptyPage(offset);
   }
 
+  if (!source.playlistId) return emptyPage(offset);
+
+  return loadPlaylistSourcePage(source, offset, limit);
+}
+
+async function loadPlaylistSourcePage(
+  source: LibrarySource,
+  offset: number,
+  limit: number,
+): Promise<LibraryBrowsePage> {
   if (!source.playlistId) return emptyPage(offset);
 
   const tracksResult = await neteaseAPI.getPlaylistTracks(source.playlistId, limit, offset);

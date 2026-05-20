@@ -47,6 +47,19 @@ export interface ToolCall {
   arguments: Record<string, unknown>;
 }
 
+export interface ChatTool {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+}
+
 export interface NeteaseTrack {
   id: number;
   name: string;
@@ -111,10 +124,13 @@ export interface PlayerToolCall {
   id: string;
   function: {
     name: string;
-    arguments: {
+    arguments: string | {
       volume?: number;
       songId?: string;
       position?: number;
+      query?: string;
+      artist?: string;
+      song?: string;
     };
   };
 }
@@ -148,6 +164,19 @@ export interface SongInsight {
   releaseYear?: number;
   moodTags?: string[];
   source: string;
+}
+
+export interface MusicSearchResult {
+  title: string;
+  snippet: string;
+  url?: string;
+  source: 'wikipedia' | 'netease';
+}
+
+export interface MusicSearchResponse {
+  query: string;
+  summary: string;
+  results: MusicSearchResult[];
 }
 
 export type VisualizerMode = 'spectrum' | 'wave' | 'circle';

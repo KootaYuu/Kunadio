@@ -5,6 +5,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import Dashboard from './components/Dashboard/Dashboard';
 import KunaChatPanel from './components/Kuna/KunaChatPanel';
 import LoginModal from './components/LoginModal';
+import { shouldPreventSpaceScroll } from './utils/keyboard';
 
 function App() {
   const { kuna, user, ui } = useStore();
@@ -14,7 +15,7 @@ function App() {
   useEffect(() => {
     // Prevent spacebar from scrolling
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.repeat) {
+      if (shouldPreventSpaceScroll(e)) {
         e.preventDefault();
       }
     };

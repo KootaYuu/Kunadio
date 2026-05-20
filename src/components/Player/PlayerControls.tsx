@@ -1,5 +1,5 @@
 import { Focus, PanelRightOpen, Play, Pause, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
-import { useStore } from '../../stores/useStore';
+import { parseVolumeInput, useStore } from '../../stores/useStore';
 
 const TEXT = {
   shuffle: '\u968f\u673a\u64ad\u653e',
@@ -112,7 +112,7 @@ export default function PlayerControls({ isImmersiveActive, onToggleImmersive }:
             max={100}
             step={1}
             value={player.volume}
-            onChange={(event) => setVolume(Number(event.target.value))}
+            onInput={(event) => setVolume(parseVolumeInput(event.currentTarget.value))}
             className="absolute inset-0 h-8 w-full cursor-pointer opacity-0"
             aria-label={TEXT.volume}
           />

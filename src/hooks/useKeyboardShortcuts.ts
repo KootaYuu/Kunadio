@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from '../stores/useStore';
+import { shouldToggleKunaChatFromSpace } from '../utils/keyboard';
 
 export function useKeyboardShortcuts() {
   const { setKunaChatOpen, kuna } = useStore();
@@ -8,7 +9,7 @@ export function useKeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Double-tap space to toggle Kuna chat
-      if (e.code === 'Space' && !e.repeat) {
+      if (shouldToggleKunaChatFromSpace(e)) {
         const now = Date.now();
         const timeSinceLastSpace = now - lastSpaceTime.current;
 

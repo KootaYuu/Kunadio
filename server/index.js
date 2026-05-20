@@ -111,6 +111,7 @@ app.use('/api/netease', async (req, res) => {
 });
 
 const songInsightCache = new Map();
+const musicSearchCache = new Map();
 
 const trimText = (text = '', maxLength = 260) =>
   text
@@ -141,6 +142,100 @@ const inferMoodTags = (text = '') => {
   }
 
   return tags.slice(0, 3);
+};
+
+const sanitizeSearchText = (text = '', maxLength = 260) =>
+  String(text)
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+
+const buildMusicSearchQuery = ({ query, artist, song }) =>
+  [query, artist, song, 'music']
+    .filter(Boolean)
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .join(' ');
+
+const searchWikipedia = async (query) => {
+  const { data } = await axios.get('https://en.wikipedia.org/w/rest.php/v1/search/page', {
+    params: { q: query, limit: 5 },
+    headers: {
+      'User-Agent': 'Kunadio/1.0 (music search; contact: no-reply@kunadio.local)',
+    },
+    proxy: false,
+    httpsAgent,
+    timeout: 10000,
+  });
+
+  return (data.pages || []).map((page) => ({
+    title: sanitizeSearchText(page.title, 120),
+    snippet: sanitizeSearchText(page.excerpt || page.description || '', 320),
+    url: page.key ? `https://en.wikipedia.org/wiki/${encodeURIComponent(page.key)}` : undefined,
+    source: 'wikipedia',
+  }));
+};
+
+const searchNeteaseMusic = async (query) => {
+  const result = await ncm.search({ keywords: query, limit: 5, type: 1 });
+  const songs = result.body?.result?.songs || [];
+
+  return songs.map((song) => {
+    const artists = (song.artists || song.ar || [])
+      .map((artist) => artist.name)
+      .filter(Boolean)
+      .join(', ');
+    const album = song.album?.name || song.al?.name || '';
+    return {
+      title: sanitizeSearchText(song.name, 120),
+      snippet: sanitizeSearchText([artists && `Artist: ${artists}`, album && `Album: ${album}`].filter(Boolean).join('. '), 260),
+      url: song.id ? `https://music.163.com/#/song?id=${song.id}` : undefined,
+      source: 'netease',
+    };
+  });
+};
+
+const searchPublicMusicInfo = async ({ query, artist, song }) => {
+  const searchQuery = buildMusicSearchQuery({ query, artist, song });
+  if (!searchQuery) {
+    return {
+      query: '',
+      summary: 'No search query was provided.',
+      results: [],
+    };
+  }
+
+  const cacheKey = searchQuery.toLowerCase();
+  if (musicSearchCache.has(cacheKey)) {
+    return musicSearchCache.get(cacheKey);
+  }
+
+  const [wikiResult, neteaseResult] = await Promise.allSettled([
+    searchWikipedia(searchQuery),
+    searchNeteaseMusic(searchQuery),
+  ]);
+
+  const results = [
+    ...(wikiResult.status === 'fulfilled' ? wikiResult.value : []),
+    ...(neteaseResult.status === 'fulfilled' ? neteaseResult.value : []),
+  ].filter((result) => result.title || result.snippet).slice(0, 8);
+
+  const failedSources = [
+    wikiResult.status === 'rejected' ? 'Wikipedia' : '',
+    neteaseResult.status === 'rejected' ? 'Netease' : '',
+  ].filter(Boolean);
+
+  const response = {
+    query: searchQuery,
+    summary: results.length > 0
+      ? `Found ${results.length} public music result${results.length === 1 ? '' : 's'} for "${searchQuery}".`
+      : `No useful public results found for "${searchQuery}"${failedSources.length ? `; failed sources: ${failedSources.join(', ')}` : ''}.`,
+    results,
+  };
+
+  musicSearchCache.set(cacheKey, response);
+  return response;
 };
 
 // ============ Song insight aggregation ============
@@ -204,6 +299,20 @@ app.get('/api/song-insight/:id', async (req, res) => {
     console.error('Song insight error:', error.message);
     res.status(500).json({
       error: 'Song insight failed',
+      details: error.message,
+    });
+  }
+});
+
+// ============ Public music search for Kuna tools ============
+app.post('/api/music-search', async (req, res) => {
+  try {
+    const result = await searchPublicMusicInfo(req.body || {});
+    res.json(result);
+  } catch (error) {
+    console.error('Music search error:', error.message);
+    res.status(500).json({
+      error: 'Music search failed',
       details: error.message,
     });
   }

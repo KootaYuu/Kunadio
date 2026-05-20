@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { useStore } from './useStore';
+import { parseVolumeInput, useStore } from './useStore';
 import type { Song } from '../types';
 
 const song = (id: number, name: string): Song & { url: string } => ({
@@ -32,10 +32,26 @@ assert.equal(useStore.getState().player.currentSong?.id, 3);
 assert.deepEqual(useStore.getState().player.playlist.map((item) => item.id), [2, 3]);
 assert.equal(useStore.getState().player.currentIndex, 1);
 
+useStore.getState().setBrowseSongs('playlist-large', [song(20, 'Page A'), song(21, 'Page B')], true, 80);
+assert.equal(useStore.getState().library.browseHasMore, true);
+assert.equal(useStore.getState().library.browseNextOffset, 80);
+
+useStore.getState().appendBrowseSongs([song(21, 'Page B Duplicate'), song(22, 'Page C')], true, 160);
+assert.deepEqual(useStore.getState().library.browseSongs.map((item) => item.id), [20, 21, 22]);
+assert.equal(useStore.getState().library.browseHasMore, true);
+assert.equal(useStore.getState().library.browseNextOffset, 160);
+
 useStore.getState().setKunaChatOpen(true);
 assert.equal(useStore.getState().kuna.isChatOpen, true);
 useStore.getState().setKunaChatOpen(false);
 assert.equal(useStore.getState().kuna.isChatOpen, false);
+
+useStore.getState().setVolume(140);
+assert.equal(useStore.getState().player.volume, 100);
+useStore.getState().setVolume(-20);
+assert.equal(useStore.getState().player.volume, 0);
+useStore.getState().setVolume(58);
+assert.equal(useStore.getState().player.volume, 58);
 
 useStore.getState().setKunaVoiceVolume(120);
 assert.equal(useStore.getState().kuna.voiceVolume, 100);
@@ -43,6 +59,10 @@ useStore.getState().setKunaVoiceVolume(-10);
 assert.equal(useStore.getState().kuna.voiceVolume, 0);
 useStore.getState().setKunaVoiceVolume(64);
 assert.equal(useStore.getState().kuna.voiceVolume, 64);
+
+assert.equal(parseVolumeInput('150'), 100);
+assert.equal(parseVolumeInput('-1'), 0);
+assert.equal(parseVolumeInput('42'), 42);
 
 useStore.getState().setShowLyrics(true);
 assert.equal(useStore.getState().ui.showLyrics, true);
