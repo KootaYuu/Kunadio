@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { fetchSongUrlsInBatches, loadLibrarySourcePage, mergeTracksWithSongUrls } from './songLoader';
+import { fetchSongUrlsInBatches, LIBRARY_PAGE_SIZE, loadLibrarySourcePage, mergeTracksWithSongUrls } from './songLoader';
 import { neteaseAPI } from './netease';
 import type { LibrarySource, NeteaseSongUrl, NeteaseTrack } from '../types';
 
@@ -79,6 +79,11 @@ assert.deepEqual(likedPage.songs.map((song) => song.id), [101, 102]);
 assert.equal(likedPage.rawCount, 5000);
 assert.equal(likedPage.hasMore, true);
 assert.equal(likedPage.nextOffset, 240);
+
+playlistTrackRequest = null;
+const firstPage = await loadLibrarySourcePage(largeLikedSource, 'user-1');
+assert.deepEqual(playlistTrackRequest, { id: 42, limit: LIBRARY_PAGE_SIZE, offset: 0 });
+assert.equal(firstPage.nextOffset, LIBRARY_PAGE_SIZE);
 
 neteaseAPI.getLikedSongIds = originalGetLikedSongIds;
 neteaseAPI.getPlaylistTracks = originalGetPlaylistTracks;

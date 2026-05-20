@@ -1,7 +1,8 @@
 import type { LibraryBrowsePage, LibrarySource, NeteaseSongUrl, NeteaseTrack, Song } from '../types';
 import { neteaseAPI, proxyAudioUrl } from './netease';
 
-const URL_BATCH_SIZE = 40;
+export const LIBRARY_PAGE_SIZE = 40;
+const URL_BATCH_SIZE = 20;
 
 export async function buildPlayableSongs(tracks: NeteaseTrack[]): Promise<Array<Song & { url: string }>> {
   if (tracks.length === 0) return [];
@@ -69,7 +70,7 @@ export async function loadLibrarySourcePage(
   source: LibrarySource,
   uid: string,
   offset = 0,
-  limit = 80,
+  limit = LIBRARY_PAGE_SIZE,
 ): Promise<LibraryBrowsePage> {
   if (source.kind === 'daily') {
     const recommendResult = await neteaseAPI.getDailyRecommend();

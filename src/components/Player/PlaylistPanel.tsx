@@ -1,7 +1,7 @@
 import { Clock3, Heart, ListMusic, Loader2, Pause, Play, Plus, Sparkles, Trash2, UserRoundCheck, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useStore } from '../../stores/useStore';
-import { loadLibrarySourcePage } from '../../services/songLoader';
+import { LIBRARY_PAGE_SIZE, loadLibrarySourcePage } from '../../services/songLoader';
 import type { LibrarySource, Song } from '../../types';
 
 const INITIAL_VISIBLE_SONGS = 120;
@@ -78,7 +78,7 @@ export default function PlaylistPanel({ isOpen, onClose }: PlaylistPanelProps) {
     setBrowseLoading(true);
 
     try {
-      const page = await loadLibrarySourcePage(source, user.neteaseUserId, offset, 80);
+      const page = await loadLibrarySourcePage(source, user.neteaseUserId, offset, LIBRARY_PAGE_SIZE);
       updateLibrarySource(source.id, {
         isLoaded: true,
         songCount: page.rawCount,

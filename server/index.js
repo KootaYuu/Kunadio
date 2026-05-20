@@ -9,6 +9,7 @@ const bodyParser = require('body-parser');
 const ncm = require('NeteaseCloudMusicApi');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { withTimeout } = require('./musicSearchUtils');
+const { createRequestQueue } = require('./neteaseRateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +25,10 @@ const defaultAllowedOriginHosts = [
   'kunadio.onrender.com',
 ];
 let neteaseCookie = '';
+const neteaseQueue = createRequestQueue({
+  minIntervalMs: Number(process.env.NETEASE_MIN_INTERVAL_MS || 350),
+});
+const callNetease = (operation) => neteaseQueue.schedule(operation);
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
@@ -98,7 +103,7 @@ app.use('/api/netease', async (req, res) => {
     if (neteaseCookie && !data.cookie) {
       data.cookie = neteaseCookie;
     }
-    const result = await moduleFunc(data, req);
+    const result = await callNetease(() => moduleFunc(data, req));
     const body = result.body || result;
 
     if (endpoint === 'login/qr/check' && body.cookie) {
@@ -181,7 +186,7 @@ const searchWikipedia = async (query) => {
 };
 
 const searchNeteaseMusic = async (query) => {
-  const result = await ncm.search({ keywords: query, limit: 5, type: 1 });
+  const result = await callNetease(() => ncm.search({ keywords: query, limit: 5, type: 1 }));
   const songs = result.body?.result?.songs || [];
 
   return songs.map((song) => {
@@ -252,7 +257,7 @@ const getSongComments = async (id) => {
     return songCommentsCache.get(id);
   }
 
-  const result = await ncm.comment_music({ id, limit: 30 });
+  const result = await callNetease(() => ncm.comment_music({ id, limit: 30 }));
   const body = result.body || result;
   const rawComments = [
     ...(body.hotComments || []),
@@ -291,8 +296,8 @@ app.get('/api/song-insight/:id', async (req, res) => {
     }
 
     const [detailResult, lyricResult] = await Promise.allSettled([
-      ncm.song_detail({ ids: String(id) }),
-      ncm.lyric({ id }),
+      callNetease(() => ncm.song_detail({ ids: String(id) })),
+      callNetease(() => ncm.lyric({ id })),
     ]);
 
     const song = detailResult.status === 'fulfilled'
@@ -306,7 +311,7 @@ app.get('/api/song-insight/:id', async (req, res) => {
       : '';
     const primaryArtistId = song?.ar?.[0]?.id;
     const artistResult = primaryArtistId
-      ? await Promise.allSettled([ncm.artist_desc({ id: primaryArtistId })])
+      ? await Promise.allSettled([callNetease(() => ncm.artist_desc({ id: primaryArtistId }))])
       : [];
     const artistBody = artistResult[0]?.status === 'fulfilled'
       ? artistResult[0].value.body

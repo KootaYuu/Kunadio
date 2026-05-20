@@ -3,7 +3,7 @@ import { Eye, Info, QrCode, User } from 'lucide-react';
 import { useStore } from '../stores/useStore';
 import { neteaseAPI } from '../services/netease';
 import { buildLibrarySources } from '../services/librarySources';
-import { buildPlayableSongs, loadLibrarySourcePage } from '../services/songLoader';
+import { buildPlayableSongs, LIBRARY_PAGE_SIZE, loadLibrarySourcePage } from '../services/songLoader';
 import { getNeteaseUserId } from '../services/neteaseSession';
 import type { LibrarySource, NeteasePlaylistSummary, NeteaseTrack, Song } from '../types';
 
@@ -115,7 +115,7 @@ export default function LoginModal() {
     setActiveLibrarySource(source.id);
     updateLibrarySource(source.id, { isLoading: true });
 
-    const page = await loadLibrarySourcePage(source, uid, 0, 80);
+    const page = await loadLibrarySourcePage(source, uid, 0, LIBRARY_PAGE_SIZE);
     const playableSongs = page.songs;
     if (loadSessionRef.current !== sessionId) return;
 

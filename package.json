@@ -10,7 +10,7 @@
     "build:netlify": "tsc -b && vite build",
     "build:render": "npm run build",
     "lint": "eslint .",
-    "test": "npx tsx src/hooks/useAudioPlayer.test.ts && npx tsx src/services/fishAudioTTS.test.ts && npx tsx src/services/gptPrompt.test.ts && npx tsx src/services/kunaPromptContext.test.ts && npx tsx src/services/kunaVoice.test.ts && npx tsx src/services/librarySources.test.ts && npx tsx src/services/lyrics.test.ts && npx tsx src/services/musicSearch.test.ts && npx tsx src/services/neteaseSession.test.ts && npx tsx src/services/songComments.test.ts && npx tsx src/services/songInsightText.test.ts && npx tsx src/services/songLoader.test.ts && npx tsx src/services/ttsManager.test.ts && npx tsx src/stores/useStore.test.ts && npx tsx src/utils/keyboard.test.ts && node server/musicSearchUtils.test.js",
+    "test": "npx tsx src/hooks/useAudioPlayer.test.ts && npx tsx src/services/fishAudioTTS.test.ts && npx tsx src/services/gptPrompt.test.ts && npx tsx src/services/kunaPromptContext.test.ts && npx tsx src/services/kunaVoice.test.ts && npx tsx src/services/librarySources.test.ts && npx tsx src/services/lyrics.test.ts && npx tsx src/services/musicSearch.test.ts && npx tsx src/services/neteaseSession.test.ts && npx tsx src/services/songComments.test.ts && npx tsx src/services/songInsightText.test.ts && npx tsx src/services/songLoader.test.ts && npx tsx src/services/ttsManager.test.ts && npx tsx src/stores/useStore.test.ts && npx tsx src/utils/keyboard.test.ts && node server/musicSearchUtils.test.js && node server/neteaseRateLimiter.test.js",
     "preview": "vite preview",
     "server": "cd server && set HTTPS_PROXY=http://127.0.0.1:7897&& set HTTP_PROXY=http://127.0.0.1:7897&& node index.js",
     "dev:all": "npm run server & vite"
