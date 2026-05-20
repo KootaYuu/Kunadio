@@ -27,6 +27,7 @@ const formatted = formatSongCommentsForKuna({
 assert.match(formatted, /Song ID: 123/);
 assert.match(formatted, /评论原句/);
 assert.match(formatted, /这首歌像一个人走到半路/);
+assert.match(formatted, /不要评论这条评论/);
 assert.ok(formatted.length < 700);
 
 assert.equal(shouldTriggerLoginCommentReadout({

@@ -8,6 +8,7 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const ncm = require('NeteaseCloudMusicApi');
 const { HttpsProxyAgent } = require('https-proxy-agent');
+const { withTimeout } = require('./musicSearchUtils');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -214,8 +215,8 @@ const searchPublicMusicInfo = async ({ query, artist, song }) => {
   }
 
   const [wikiResult, neteaseResult] = await Promise.allSettled([
-    searchWikipedia(searchQuery),
-    searchNeteaseMusic(searchQuery),
+    withTimeout(searchWikipedia(searchQuery), 8000, 'Wikipedia search'),
+    withTimeout(searchNeteaseMusic(searchQuery), 8000, 'Netease search'),
   ]);
 
   const results = [

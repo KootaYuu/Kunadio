@@ -159,7 +159,7 @@ async function buildCommentReadoutPrompt(songId: number): Promise<string> {
   if (/No suitable public comments found/.test(commentText)) return '';
   return [
     commentText,
-    '做一段私人电台口播：先说“评论里有人说”或类似表达，然后直接读一条评论原句。读完后只补一句你的听感，再把注意力交还给当前歌曲。不要说你无法读取评论。',
+    '做一段私人电台口播：先说“评论里有人说”或类似表达，然后直接读一条评论原句。不要评论这条评论，不要补自己的听感。读完停住，把注意力交还给当前歌曲。不要说你无法读取评论。',
   ].join('\n');
 }
 

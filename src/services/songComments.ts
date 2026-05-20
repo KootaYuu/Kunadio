@@ -28,7 +28,7 @@ export function formatSongCommentsForKuna(response: SongCommentsResponse): strin
 
   return [
     `Song ID: ${response.songId}`,
-    '这些是网易云评论区里的公开评论。Kuna 可以直接读“评论原句”，但必须明确说这是评论里的人说的，不要冒充自己的话。',
+    '这些是网易云评论区里的公开评论。Kuna 可以直接读“评论原句”，但必须明确说这是评论里的人说的，不要冒充自己的话。不要评论这条评论，不要补自己的听感，读完就把歌还给用户。',
     comments.map((comment, index) => `${index + 1}. 评论原句：“${normalizeComment(comment.content)}”`).join('\n'),
   ].join('\n');
 }

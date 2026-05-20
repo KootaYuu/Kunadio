@@ -27,8 +27,9 @@ Comment readout format:
 
 - Mention that the sentence comes from the comments.
 - Read the selected comment as a direct quote.
-- Add one short Kuna reaction after the quote.
-- Return attention to the current song.
+- Do not comment on the comment.
+- Do not add Kuna's own listening reaction after the quote.
+- Stop after the quote and return attention to the current song.
 
 Example:
 
@@ -134,4 +135,3 @@ Add focused tests for:
 - Manual skip stops active TTS and prevents immediate stale speech.
 - Repeated manual skips suppress proactive speech until playback stabilizes.
 - Lyric summary uses available lyrics and skips when lyrics are missing.
-
