@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: kunadio
+    env: node
+    plan: starter
+    buildCommand: npm run build:render
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GPT_API_KEY
+        sync: false
+      - key: GPT_API_URL
+        value: https://api.openai.com
+      - key: GPT_MODEL
+        value: gpt-5.5
+      - key: FISH_AUDIO_KEY
+        sync: false
+      - key: FISH_AUDIO_REFERENCE_ID
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

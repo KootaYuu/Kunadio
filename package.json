@@ -1,0 +1,43 @@
+{
+  "name": "kunadio",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "node server/index.js",
+    "build": "tsc -b && vite build",
+    "build:netlify": "tsc -b && vite build",
+    "build:render": "npm install && cd server && npm install && cd .. && npm run build",
+    "lint": "eslint .",
+    "test": "npx tsx src/services/kunaModes.test.ts && npx tsx src/services/librarySources.test.ts && npx tsx src/services/lyrics.test.ts && npx tsx src/services/neteaseSession.test.ts && npx tsx src/services/songInsightText.test.ts && npx tsx src/services/songLoader.test.ts && npx tsx src/stores/useStore.test.ts",
+    "preview": "vite preview",
+    "server": "cd server && set HTTPS_PROXY=http://127.0.0.1:7897&& set HTTP_PROXY=http://127.0.0.1:7897&& node index.js",
+    "dev:all": "npm run server & vite"
+  },
+  "dependencies": {
+    "axios": "^1.16.1",
+    "lucide-react": "^1.16.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/node": "^24.12.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.3.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12"
+  }
+}
