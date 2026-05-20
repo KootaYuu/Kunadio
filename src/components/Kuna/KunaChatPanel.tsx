@@ -1,20 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Volume2, X } from 'lucide-react';
 import { useStore } from '../../stores/useStore';
-import { gptAPI, KUNA_SYSTEM_PROMPT, PLAYER_TOOLS } from '../../services/gpt';
+import { gptAPI, PLAYER_TOOLS } from '../../services/gpt';
 import { prepareKunaTTS, stripTTSMarkup, ttsAPI } from '../../services/fishAudioTTS';
 import { ttsManager } from '../../services/ttsManager';
-import { getKunaModeProfile, summarizeForVoice } from '../../services/kunaModes';
+import { summarizeForVoice } from '../../services/kunaVoice';
+import { buildKunaChatMessages } from '../../services/kunaPromptContext';
 import { getLyricContextForKuna } from '../../services/lyrics';
 import { getSongInsight } from '../../services/netease';
 import { formatSongInsightForKuna } from '../../services/songInsightText';
-import type { ChatMessage, KunaPersona, PlayerToolCall } from '../../types';
+import type { PlayerToolCall } from '../../types';
 
-const personaOptions: Array<{ value: KunaPersona; label: string }> = [
-  { value: 'quiet', label: '安静陪伴' },
-  { value: 'radio', label: '私人电台' },
-  { value: 'companion', label: '音乐伙伴' },
-];
+const TEXT = {
+  speaking: '正在说话...',
+  preparingVoice: '正在准备声音...',
+  companion: '音乐陪伴中',
+  close: '关闭 Kuna',
+  voiceVolume: 'Kuna voice volume',
+  emptyTitle: '你好，我是 Kuna。',
+  emptyBody: '我会在右侧陪你听歌。想聊音乐、换歌、调音量，直接告诉我。',
+  preparingToSpeak: '准备说话...',
+  thinking: '思考中...',
+  inputPlaceholder: '和 Kuna 说点什么...',
+  send: '发送',
+  ttsError: '语音合成暂时失败了，我先用文字回复你。',
+  chatError: '抱歉，我好像有点卡住了。能再说一遍吗？',
+  emptyPlaylist: '播放列表为空，请先加载歌曲。',
+  actionDone: '操作完成。',
+};
 
 export default function KunaChatPanel() {
   const {
@@ -28,7 +41,6 @@ export default function KunaChatPanel() {
     nextSong,
     previousSong,
     setPlaying,
-    setKunaPersona,
     setKunaVoiceVolume,
   } = useStore();
   const [inputText, setInputText] = useState('');
@@ -54,10 +66,9 @@ export default function KunaChatPanel() {
       ttsManager.stop();
       setIsPreparingVoice(true);
 
-      const modeProfile = getKunaModeProfile(kuna.persona);
       const cleanText = stripTTSMarkup(text);
-      const voiceText = summarizeForVoice(cleanText, modeProfile.maxDialogVoiceChars);
-      const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(`${modeProfile.ttsTone} ${voiceText}`));
+      const voiceText = summarizeForVoice(cleanText);
+      const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(voiceText));
 
       setIsPreparingVoice(false);
       setKunaSpeaking(true);
@@ -72,7 +83,7 @@ export default function KunaChatPanel() {
       addMessage({
         id: `tts_error_${Date.now()}`,
         role: 'kuna',
-        content: '语音合成暂时失败了，我先用文字回复你。',
+        content: TEXT.ttsError,
         timestamp: Date.now(),
       });
     }
@@ -92,7 +103,7 @@ export default function KunaChatPanel() {
           setPlaying(true);
           return `开始播放《${player.playlist[0].name}》。`;
         }
-        return '播放列表为空，请先加载歌曲。';
+        return TEXT.emptyPlaylist;
       case 'pause':
         setPlaying(false);
         return '已暂停。';
@@ -106,7 +117,7 @@ export default function KunaChatPanel() {
         setVolume(args.volume ?? player.volume);
         return `音量已调至 ${args.volume}%`;
       default:
-        return '操作完成。';
+        return TEXT.actionDone;
     }
   };
 
@@ -126,31 +137,16 @@ export default function KunaChatPanel() {
     setIsLoading(true);
 
     try {
-      const modeProfile = getKunaModeProfile(kuna.persona);
       const songInsight = player.currentSong ? await getSongInsight(player.currentSong.id) : null;
       const songInsightText = formatSongInsightForKuna(songInsight);
       const lyricContext = getLyricContextForKuna(useStore.getState().ui.lyrics, player.currentTime);
-      const messages: ChatMessage[] = [
-        { role: 'system', content: KUNA_SYSTEM_PROMPT },
-        { role: 'system', content: modeProfile.promptHint },
-        {
-          role: 'system',
-          content: [
-            `当前播放状态：${player.isPlaying ? '播放中' : '已暂停'}`,
-            `歌曲：${player.currentSong?.name || '无'}`,
-            `歌手：${player.currentSong?.artists?.map((artist) => artist.name).join(', ') || '无'}`,
-            `音量：${player.volume}%`,
-            lyricContext ? `当前歌词上下文：${lyricContext}` : '',
-            songInsightText ? `当前歌曲资料卡：${songInsightText}` : '',
-            '文字回复可以完整一些；语音回复也会尽量保留重点，不要为了很短而截断情绪。',
-          ].filter(Boolean).join('；'),
-        },
-        ...kuna.messages.slice(-10).map((message): ChatMessage => ({
-          role: message.role === 'kuna' ? 'assistant' : 'user',
-          content: message.content,
-        })),
-        { role: 'user', content: userMessage },
-      ];
+      const messages = buildKunaChatMessages({
+        player,
+        lyricContext,
+        songInsightText,
+        history: kuna.messages,
+        userMessage,
+      });
 
       const response = await gptAPI.chat(messages, PLAYER_TOOLS, 'auto');
       const choice = response.choices[0];
@@ -188,7 +184,7 @@ export default function KunaChatPanel() {
       addMessage({
         id: (Date.now() + 1).toString(),
         role: 'kuna',
-        content: '抱歉，我好像有点卡住了。能再说一遍吗？',
+        content: TEXT.chatError,
         timestamp: Date.now(),
       });
     } finally {
@@ -213,21 +209,22 @@ export default function KunaChatPanel() {
             </div>
             <div>
               <h2 className="text-xl font-medium text-glow">Kuna</h2>
-              <p className="text-sm text-text-muted">{kuna.isSpeaking ? '正在说话...' : isPreparingVoice ? '正在准备声音...' : '音乐陪伴中'}</p>
+              <p className="text-sm text-text-muted">
+                {kuna.isSpeaking ? TEXT.speaking : isPreparingVoice ? TEXT.preparingVoice : TEXT.companion}
+              </p>
             </div>
           </div>
           <button
             onClick={() => setKunaChatOpen(false)}
             className="rounded-md p-2 text-text-muted transition-colors hover:bg-white/8 hover:text-glow"
-            aria-label="关闭 Kuna"
+            aria-label={TEXT.close}
           >
             <X size={18} />
           </button>
         </header>
 
         <div className="border-b border-white/10 px-4 py-3.5">
-          <ModeSegment value={kuna.persona} options={personaOptions} onChange={setKunaPersona} />
-          <div className="mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-bg-primary/35 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-bg-primary/35 px-3 py-2.5">
             <Volume2 size={16} className="shrink-0 text-caramel" />
             <input
               type="range"
@@ -236,7 +233,7 @@ export default function KunaChatPanel() {
               value={kuna.voiceVolume}
               onChange={(event) => setKunaVoiceVolume(Number(event.target.value))}
               className="h-2 min-w-0 flex-1 cursor-pointer accent-caramel"
-              aria-label="Kuna voice volume"
+              aria-label={TEXT.voiceVolume}
             />
             <span className="w-10 text-right font-mono text-xs text-text-secondary">{kuna.voiceVolume}%</span>
           </div>
@@ -245,8 +242,8 @@ export default function KunaChatPanel() {
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5">
           {kuna.messages.length === 0 && (
             <div className="rounded-lg border border-white/10 bg-bg-primary/35 px-4 py-3 text-sm text-text-secondary">
-              <p>你好，我是 Kuna。</p>
-              <p className="mt-1">我会在右侧陪你听歌。想聊音乐、换歌、调音量，直接告诉我。</p>
+              <p>{TEXT.emptyTitle}</p>
+              <p className="mt-1">{TEXT.emptyBody}</p>
             </div>
           )}
 
@@ -273,7 +270,7 @@ export default function KunaChatPanel() {
                     <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-caramel" style={{ animationDelay: '150ms' }} />
                     <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-caramel" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <span className="text-xs text-text-muted">{isPreparingVoice ? '准备说话...' : '思考中...'}</span>
+                  <span className="text-xs text-text-muted">{isPreparingVoice ? TEXT.preparingToSpeak : TEXT.thinking}</span>
                 </div>
               </div>
             </div>
@@ -290,14 +287,14 @@ export default function KunaChatPanel() {
               value={inputText}
               onChange={(event) => setInputText(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="和 Kuna 说点什么..."
+              placeholder={TEXT.inputPlaceholder}
               className="min-w-0 flex-1 bg-transparent text-base text-text-primary outline-none placeholder:text-text-muted"
             />
             <button
               onClick={() => void sendMessage()}
               disabled={!inputText.trim() || isLoading}
               className="rounded-full bg-caramel/24 p-2.5 text-caramel transition-all hover:bg-caramel/34 disabled:opacity-30"
-              aria-label="发送"
+              aria-label={TEXT.send}
             >
               <Send size={19} />
             </button>
@@ -305,31 +302,5 @@ export default function KunaChatPanel() {
         </div>
       </div>
     </aside>
-  );
-}
-
-interface ModeSegmentProps<T extends string> {
-  value: T;
-  options: Array<{ value: T; label: string }>;
-  onChange: (value: T) => void;
-}
-
-function ModeSegment<T extends string>({ value, options, onChange }: ModeSegmentProps<T>) {
-  return (
-    <div className="flex rounded-lg border border-white/10 bg-bg-primary/45 p-1">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          className={`flex-1 rounded-md px-2 py-2 text-sm transition-all ${
-            option.value === value
-              ? 'bg-caramel/25 text-glow'
-              : 'text-text-muted hover:text-text-primary'
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }

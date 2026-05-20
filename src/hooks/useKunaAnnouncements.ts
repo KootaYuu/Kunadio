@@ -4,7 +4,7 @@ import { gptAPI, KUNA_SYSTEM_PROMPT } from '../services/gpt';
 import { prepareKunaTTS, stripTTSMarkup, ttsAPI } from '../services/fishAudioTTS';
 import { ttsManager } from '../services/ttsManager';
 import { getSongInsight } from '../services/netease';
-import { getKunaModeProfile, shouldAutoAnnounce } from '../services/kunaModes';
+import { KUNA_AUTO_ANNOUNCE, shouldAutoAnnounce } from '../services/kunaVoice';
 import { formatSongInsightForKuna } from '../services/songInsightText';
 
 type AnnouncementType = 'song_story' | 'next_preview';
@@ -31,8 +31,6 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
     autoSpeakTimes.current = autoSpeakTimes.current.filter((time) => now - time < 15 * 60 * 1000);
 
     if (!shouldAutoAnnounce({
-      persona: latestKuna.persona,
-      event: type,
       recentAutoSpeakCount: autoSpeakTimes.current.length,
       msSinceLastSpeak: now - lastAnnouncementTime.current,
     })) {
@@ -43,7 +41,6 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
     autoSpeakTimes.current.push(now);
 
     try {
-      const profile = getKunaModeProfile(latestKuna.persona);
       const artistNames = song.artists.map((artist) => artist.name).filter(Boolean).join(', ') || '未知歌手';
       const albumName = song.album?.name || '未知专辑';
       const insight = await getSongInsight(song.id);
@@ -51,12 +48,11 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
 
       const prompt = type === 'song_story'
         ? [
-            `模式要求：${profile.promptHint}`,
             `当前播放：《${song.name}》，歌手：${artistNames}，专辑：《${albumName}》。`,
-            insightText ? `歌曲资料卡：${insightText}` : '',
-            `只说 1 到 2 句，不超过 ${profile.maxAutoChars} 个中文字符。优先使用资料卡里的真实信息；资料不足时只聊听感。不要说“没有信息”，不要编造事实。`,
+            insightText ? `当前歌曲资料卡：${insightText}` : '',
+            `只说 1 到 2 句，不超过 ${KUNA_AUTO_ANNOUNCE.maxAutoChars} 个中文字符。优先使用资料卡里的真实信息；资料不足时只聊听感。不要说“没有信息”，不要编造事实。`,
           ].filter(Boolean).join('\n')
-        : buildNextPreviewPrompt(profile.promptHint, profile.maxAutoChars, player.currentIndex, player.playlist);
+        : buildNextPreviewPrompt(player.currentIndex, player.playlist);
 
       const response = await gptAPI.chat([
         { role: 'system', content: KUNA_SYSTEM_PROMPT },
@@ -77,7 +73,7 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
         return;
       }
 
-      const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(`${profile.ttsTone} ${content}`));
+      const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(content));
       setKunaSpeaking(true);
       ttsManager.play(audioUrl, latestKuna.voiceVolume / 100);
       ttsManager.setOnEnded(() => {
@@ -134,24 +130,18 @@ export function useKunaAnnouncements(audioRef: React.RefObject<HTMLAudioElement 
 }
 
 function buildNextPreviewPrompt(
-  promptHint: string,
-  maxAutoChars: number,
   currentIndex: number,
   playlist: Array<{ name: string; artists: Array<{ name: string }> }>,
 ): string {
   const nextIndex = (currentIndex + 1) % playlist.length;
   const nextSong = playlist[nextIndex];
   if (!nextSong) {
-    return [
-      `模式要求：${promptHint}`,
-      '这首歌快要结束了。只说 1 句自然收尾，不超过 18 个中文字符。',
-    ].join('\n');
+    return `这首歌快要结束了。只说 1 句自然收尾，不超过 ${KUNA_AUTO_ANNOUNCE.maxNextPreviewChars} 个中文字符。`;
   }
 
   const nextArtists = nextSong.artists.map((artist) => artist.name).filter(Boolean).join(', ') || '未知歌手';
   return [
-    `模式要求：${promptHint}`,
     `下一首是《${nextSong.name}》，歌手是 ${nextArtists}。`,
-    `只说 1 句自然预告，不超过 ${Math.min(maxAutoChars, 32)} 个中文字符。不要说“没有信息”。`,
+    `只说 1 句自然预告，不超过 ${KUNA_AUTO_ANNOUNCE.maxNextPreviewChars} 个中文字符。不要说“没有信息”。`,
   ].join('\n');
 }

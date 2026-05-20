@@ -32,10 +32,6 @@ assert.equal(useStore.getState().player.currentSong?.id, 3);
 assert.deepEqual(useStore.getState().player.playlist.map((item) => item.id), [2, 3]);
 assert.equal(useStore.getState().player.currentIndex, 1);
 
-useStore.getState().setKunaPersona('companion');
-
-assert.equal(useStore.getState().kuna.persona, 'companion');
-
 useStore.getState().setKunaChatOpen(true);
 assert.equal(useStore.getState().kuna.isChatOpen, true);
 useStore.getState().setKunaChatOpen(false);

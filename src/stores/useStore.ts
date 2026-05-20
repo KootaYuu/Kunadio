@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { KunaPersona, LibrarySource, LyricLine, PlaybackMode, Song, UserProfile, Message, VisualizerMode } from '../types';
+import type { LibrarySource, LyricLine, PlaybackMode, Song, UserProfile, Message, VisualizerMode } from '../types';
 
 interface PlayerState {
   isPlaying: boolean;
@@ -27,7 +27,6 @@ interface KunaState {
   isListening: boolean;
   messages: Message[];
   lastSpeakTime: number;
-  persona: KunaPersona;
   voiceVolume: number;
 }
 
@@ -101,7 +100,6 @@ interface AppState {
   setKunaListening: (listening: boolean) => void;
   addMessage: (message: Message) => void;
   setLastSpeakTime: (time: number) => void;
-  setKunaPersona: (persona: KunaPersona) => void;
   setKunaVoiceVolume: (volume: number) => void;
 
   // UI actions
@@ -139,7 +137,6 @@ export const useStore = create<AppState>((set, get) => ({
     isListening: false,
     messages: [],
     lastSpeakTime: 0,
-    persona: 'radio',
     voiceVolume: 85,
   },
   ui: {
@@ -433,7 +430,6 @@ export const useStore = create<AppState>((set, get) => ({
   addMessage: (message) =>
     set((state) => ({ kuna: { ...state.kuna, messages: [...state.kuna.messages, message].slice(-50) } })),
   setLastSpeakTime: (time) => set((state) => ({ kuna: { ...state.kuna, lastSpeakTime: time } })),
-  setKunaPersona: (persona) => set((state) => ({ kuna: { ...state.kuna, persona } })),
   setKunaVoiceVolume: (volume) => set((state) => ({
     kuna: { ...state.kuna, voiceVolume: Math.max(0, Math.min(100, volume)) },
   })),

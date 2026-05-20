@@ -151,5 +151,4 @@ export interface SongInsight {
 }
 
 export type VisualizerMode = 'spectrum' | 'wave' | 'circle';
-export type KunaPersona = 'quiet' | 'radio' | 'companion';
 export type PlaybackMode = 'sequential' | 'shuffle' | 'repeat-one';
