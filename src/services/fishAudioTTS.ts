@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { API_BASE } from './apiConfig';
 
+export const KUNA_TTS_CHUNK_MAX_CHARS = 140;
+
 export const ttsAPI = {
   synthesize: async (text: string, referenceId?: string, format = 'mp3'): Promise<string> => {
     const response = await axios.post(
@@ -32,6 +34,48 @@ export const prepareKunaTTS = (text: string): string =>
     .replace(pauseAfterPunctuationPattern, '$1 ')
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+export function splitKunaTTSText(text: string, maxChars = KUNA_TTS_CHUNK_MAX_CHARS): string[] {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean) return [];
+  if (clean.length <= maxChars) return [clean];
+
+  const chunks: string[] = [];
+  const sentences = clean.match(/[^.!?;,\u3002\uff01\uff1f\uff1b\uff0c]+[.!?;,\u3002\uff01\uff1f\uff1b\uff0c]?/g) || [clean];
+  let current = '';
+
+  for (const sentence of sentences) {
+    const part = sentence.trim();
+    if (!part) continue;
+
+    if (part.length > maxChars) {
+      if (current) {
+        chunks.push(current);
+        current = '';
+      }
+      chunks.push(...splitLongText(part, maxChars));
+      continue;
+    }
+
+    if (current && current.length + part.length > maxChars) {
+      chunks.push(current);
+      current = part;
+    } else {
+      current += part;
+    }
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function splitLongText(text: string, maxChars: number): string[] {
+  const chunks: string[] = [];
+  for (let index = 0; index < text.length; index += maxChars) {
+    chunks.push(text.slice(index, index + maxChars));
+  }
+  return chunks;
+}
 
 // Preload TTS audio
 const audioCache = new Map<string, string>();

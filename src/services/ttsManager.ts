@@ -5,6 +5,7 @@
 
 let currentTTSAudio: HTMLAudioElement | null = null;
 let onEndedCallback: (() => void) | null = null;
+let playbackToken = 0;
 
 const finishPlayback = () => {
   currentTTSAudio = null;
@@ -38,10 +39,59 @@ export const ttsManager = {
     return audio;
   },
 
+  playSequence: (audioUrls: string[], volume = 1): HTMLAudioElement | null => {
+    ttsManager.stop();
+    const urls = audioUrls.filter(Boolean);
+    if (urls.length === 0) {
+      finishPlayback();
+      return null;
+    }
+
+    const token = ++playbackToken;
+    let index = 0;
+    let firstAudio: HTMLAudioElement | null = null;
+
+    const playNext = () => {
+      if (token !== playbackToken) return;
+      const audioUrl = urls[index];
+      if (!audioUrl) {
+        finishPlayback();
+        return;
+      }
+
+      const audio = new Audio(audioUrl);
+      audio.volume = Math.max(0, Math.min(1, volume));
+      currentTTSAudio = audio;
+      if (!firstAudio) firstAudio = audio;
+
+      const handleComplete = () => {
+        if (token !== playbackToken) return;
+        index += 1;
+        if (index >= urls.length) {
+          finishPlayback();
+          return;
+        }
+        playNext();
+      };
+
+      audio.addEventListener('ended', handleComplete, { once: true });
+      audio.addEventListener('error', handleComplete, { once: true });
+
+      audio.play().catch((err) => {
+        console.error('TTS play error:', err);
+        handleComplete();
+      });
+    };
+
+    playNext();
+    return firstAudio;
+  },
+
   /**
    * Stop the current TTS audio
    */
   stop: () => {
+    playbackToken += 1;
     if (currentTTSAudio) {
       currentTTSAudio.pause();
       currentTTSAudio.currentTime = 0;

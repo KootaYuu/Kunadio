@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Send, Volume2, X } from 'lucide-react';
 import { parseVolumeInput, useStore } from '../../stores/useStore';
 import { gptAPI, KUNA_TOOLS } from '../../services/gpt';
-import { prepareKunaTTS, stripTTSMarkup, ttsAPI } from '../../services/fishAudioTTS';
+import { prepareKunaTTS, splitKunaTTSText, stripTTSMarkup, ttsAPI } from '../../services/fishAudioTTS';
 import { ttsManager } from '../../services/ttsManager';
 import { KUNA_DIALOG_VOICE_MAX_CHARS, summarizeForVoice } from '../../services/kunaVoice';
 import { buildKunaChatMessages } from '../../services/kunaPromptContext';
@@ -74,11 +74,12 @@ export default function KunaChatPanel() {
 
       const cleanText = stripTTSMarkup(text);
       const voiceText = summarizeForVoice(cleanText, KUNA_DIALOG_VOICE_MAX_CHARS);
-      const audioUrl = await ttsAPI.synthesize(prepareKunaTTS(voiceText));
+      const ttsChunks = splitKunaTTSText(prepareKunaTTS(voiceText));
+      const audioUrls = await Promise.all(ttsChunks.map((chunk) => ttsAPI.synthesize(chunk)));
 
       setIsPreparingVoice(false);
       setKunaSpeaking(true);
-      ttsManager.play(audioUrl, useStore.getState().kuna.voiceVolume / 100);
+      ttsManager.playSequence(audioUrls, useStore.getState().kuna.voiceVolume / 100);
       ttsManager.setOnEnded(() => {
         setKunaSpeaking(false);
       });
