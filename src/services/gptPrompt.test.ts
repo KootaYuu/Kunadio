@@ -8,4 +8,6 @@ assert.match(KUNA_SYSTEM_PROMPT, /把注意力带回正在播放的歌/);
 assert.match(KUNA_SYSTEM_PROMPT, /readSongComments/);
 assert.match(KUNA_SYSTEM_PROMPT, /不要说安全的话/);
 assert.match(KUNA_SYSTEM_PROMPT, /对但没用/);
+assert.match(KUNA_SYSTEM_PROMPT, /具体但不玄/);
+assert.match(KUNA_SYSTEM_PROMPT, /不要为了怪而怪/);
 assert.equal(KUNA_SYSTEM_PROMPT.includes('每次 1-3 句，最多 4 句'), false);
