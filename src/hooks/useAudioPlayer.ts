@@ -12,6 +12,11 @@ export function useAudioPlayer() {
   const { player, kuna, setPlaying, setCurrentTime, setDuration, setSeekHandler, nextSong, setFrequencyData } = useStore();
   const currentSongUrl = player.currentSong?.url;
   const isPlaying = player.isPlaying;
+  const isPlayingRef = useRef(isPlaying);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   // Initialize audio element
   useEffect(() => {
@@ -82,14 +87,14 @@ export function useAudioPlayer() {
     const audio = audioRef.current;
     if (!audio || !currentSongUrl) return;
 
-    if (audio.src !== currentSongUrl) {
+    if (shouldLoadAudioSource(audio.getAttribute('src'), currentSongUrl)) {
       audio.src = currentSongUrl;
       audio.load();
-      if (isPlaying) {
+      if (isPlayingRef.current) {
         audio.play().catch(console.error);
       }
     }
-  }, [currentSongUrl, isPlaying]);
+  }, [currentSongUrl]);
 
   // Handle play/pause
   useEffect(() => {
@@ -154,4 +159,9 @@ export function useAudioPlayer() {
     audioRef,
     analyserRef,
   };
+}
+
+export function shouldLoadAudioSource(currentSource: string | null, nextSource: string | null | undefined): boolean {
+  if (!nextSource) return false;
+  return currentSource !== nextSource;
 }
